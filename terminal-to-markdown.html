@@ -6,17 +6,17 @@
   <title>终端转 Markdown 转换器</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=Space+Grotesk:wght@700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@10..48,700;10..48,800&family=Fira+Code:wght@400;500;600&family=Source+Sans+3:wght@400;500;600&display=swap" rel="stylesheet">
   <style>
     :root {
-      --primary-green: #00d95f;
-      --dark-green: #0a2a1a;
+      --primary-green: #91B493;
+      --dark-green: #1a3a22;
       --bg-primary: #0a0f14;
       --bg-secondary: #111820;
       --border-color: #1a2a2a;
       --text-primary: #e0e6f0;
       --text-secondary: #8a9ab0;
-      --accent-success: #00d95f;
+      --accent-success: #91B493;
       --accent-error: #ff4757;
       --glow-intensity: 0.4;
     }
@@ -52,8 +52,8 @@
       width: 100%;
       height: 100%;
       background-image:
-        linear-gradient(0deg, transparent 24%, rgba(0, 217, 95, 0.05) 25%, rgba(0, 217, 95, 0.05) 26%, transparent 27%, transparent 74%, rgba(0, 217, 95, 0.05) 75%, rgba(0, 217, 95, 0.05) 76%, transparent 77%, transparent),
-        linear-gradient(90deg, transparent 24%, rgba(0, 217, 95, 0.05) 25%, rgba(0, 217, 95, 0.05) 26%, transparent 27%, transparent 74%, rgba(0, 217, 95, 0.05) 75%, rgba(0, 217, 95, 0.05) 76%, transparent 77%, transparent);
+        linear-gradient(0deg, transparent 24%, rgba(145, 180, 147, 0.05) 25%, rgba(145, 180, 147, 0.05) 26%, transparent 27%, transparent 74%, rgba(145, 180, 147, 0.05) 75%, rgba(145, 180, 147, 0.05) 76%, transparent 77%, transparent),
+        linear-gradient(90deg, transparent 24%, rgba(145, 180, 147, 0.05) 25%, rgba(145, 180, 147, 0.05) 26%, transparent 27%, transparent 74%, rgba(145, 180, 147, 0.05) 75%, rgba(145, 180, 147, 0.05) 76%, transparent 77%, transparent);
       background-size: 60px 60px;
       pointer-events: none;
       z-index: 0;
@@ -67,24 +67,28 @@
     }
 
     h1 {
-      font-family: 'Space Grotesk', sans-serif;
-      font-size: 2.2rem;
+      font-family: 'Bricolage Grotesque', sans-serif;
+      font-size: 2.5rem;
       margin-bottom: 0.5rem;
-      background: linear-gradient(135deg, var(--primary-green) 0%, #00ff7f 100%);
+      background: linear-gradient(135deg, var(--primary-green) 0%, #a8d5aa 100%);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
       background-clip: text;
-      font-weight: 700;
-      letter-spacing: 1px;
-      text-shadow: 0 0 20px rgba(0, 217, 95, 0.3);
+      font-weight: 800;
+      letter-spacing: -1px;
+      font-optical-sizing: auto;
+      text-shadow: 0 0 20px rgba(145, 180, 147, 0.2);
       animation: fadeInDown 0.8s ease-out;
     }
 
     .subtitle {
+      font-family: 'Source Sans 3', sans-serif;
       color: var(--text-secondary);
       font-size: 0.95rem;
       margin-bottom: 2rem;
       font-style: italic;
+      font-weight: 400;
+      letter-spacing: 0.5px;
       animation: fadeInUp 0.8s ease-out 0.1s both;
     }
 
@@ -113,13 +117,13 @@
       right: -50%;
       width: 100%;
       height: 100%;
-      background: radial-gradient(circle, rgba(0, 217, 95, 0.1) 0%, transparent 70%);
+      background: radial-gradient(circle, rgba(145, 180, 147, 0.1) 0%, transparent 70%);
       pointer-events: none;
     }
 
     .section:hover {
       border-color: var(--primary-green);
-      box-shadow: 0 0 20px rgba(0, 217, 95, 0.15), inset 0 0 20px rgba(0, 217, 95, 0.05);
+      box-shadow: 0 0 20px rgba(145, 180, 147, 0.15), inset 0 0 20px rgba(145, 180, 147, 0.05);
       transform: translateY(-4px);
     }
 
@@ -146,7 +150,7 @@
 
     textarea {
       width: 100%;
-      font-family: 'IBM Plex Mono', monospace;
+      font-family: 'Fira Code', monospace;
       background: rgba(10, 15, 20, 0.8);
       color: var(--text-primary);
       border: 1px solid var(--border-color);
@@ -155,7 +159,8 @@
       resize: vertical;
       min-height: 120px;
       line-height: 1.6;
-      font-size: 0.95rem;
+      font-size: 0.9rem;
+      font-weight: 400;
       transition: all 0.3s ease;
       backdrop-filter: blur(5px);
     }
@@ -168,7 +173,7 @@
     textarea:focus {
       outline: none;
       border-color: var(--primary-green);
-      box-shadow: 0 0 0 3px rgba(0, 217, 95, 0.1), inset 0 0 10px rgba(0, 217, 95, 0.05);
+      box-shadow: 0 0 0 3px rgba(145, 180, 147, 0.1), inset 0 0 10px rgba(145, 180, 147, 0.05);
       background: rgba(10, 15, 20, 0.95);
     }
 
@@ -180,21 +185,21 @@
     }
 
     button {
-      font-family: 'IBM Plex Mono', monospace;
-      background: linear-gradient(135deg, var(--primary-green) 0%, #00ff7f 100%);
-      color: #000;
+      font-family: 'Fira Code', monospace;
+      background: linear-gradient(135deg, var(--primary-green) 0%, #a8d5aa 100%);
+      color: #0a0f14;
       border: none;
       padding: 0.8rem 1.6rem;
       border-radius: 8px;
       cursor: pointer;
       font-weight: 600;
-      font-size: 0.9rem;
+      font-size: 0.85rem;
       text-transform: uppercase;
-      letter-spacing: 1px;
+      letter-spacing: 1.2px;
       transition: all 0.3s cubic-bezier(0.23, 1, 0.320, 1);
       position: relative;
       overflow: hidden;
-      box-shadow: 0 4px 12px rgba(0, 217, 95, 0.2);
+      box-shadow: 0 4px 12px rgba(145, 180, 147, 0.2);
     }
 
     button::before {
@@ -211,9 +216,9 @@
     }
 
     button:hover:not(:disabled) {
-      background: linear-gradient(135deg, #00ff7f 0%, var(--primary-green) 100%);
+      background: linear-gradient(135deg, #a8d5aa 0%, var(--primary-green) 100%);
       transform: translateY(-2px);
-      box-shadow: 0 8px 20px rgba(0, 217, 95, 0.4);
+      box-shadow: 0 8px 20px rgba(145, 180, 147, 0.4);
     }
 
     button:hover:not(:disabled)::before {
@@ -247,10 +252,10 @@
     }
 
     .feedback.success {
-      background: rgba(0, 217, 95, 0.1);
+      background: rgba(145, 180, 147, 0.1);
       border: 1px solid var(--accent-success);
       color: var(--accent-success);
-      box-shadow: 0 0 10px rgba(0, 217, 95, 0.15);
+      box-shadow: 0 0 10px rgba(145, 180, 147, 0.15);
     }
 
     .feedback.error {
@@ -261,10 +266,12 @@
     }
 
     .info-text {
+      font-family: 'Source Sans 3', sans-serif;
       font-size: 0.85rem;
       color: var(--text-secondary);
       margin-top: 0.8rem;
       opacity: 0.85;
+      font-weight: 400;
     }
 
     #preview {
@@ -281,7 +288,7 @@
 
     #preview:hover {
       border-color: var(--primary-green);
-      box-shadow: inset 0 0 10px rgba(0, 217, 95, 0.05);
+      box-shadow: inset 0 0 10px rgba(145, 180, 147, 0.05);
     }
 
     #preview code {
@@ -291,17 +298,20 @@
       display: block;
       border-radius: 6px;
       color: var(--primary-green);
-      font-family: 'IBM Plex Mono', monospace;
+      font-family: 'Fira Code', monospace;
       line-height: 1.6;
       font-size: 0.9rem;
+      font-weight: 400;
     }
 
     .empty-state {
+      font-family: 'Source Sans 3', sans-serif;
       color: var(--text-secondary);
       opacity: 0.7;
       font-style: italic;
       text-align: center;
       padding: 2rem;
+      font-weight: 400;
     }
 
     /* 动画定义 */
