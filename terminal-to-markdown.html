@@ -471,7 +471,51 @@
       maxConsecutiveBlankLines: '\n\n'
     };
 
+    // ===========================================
+    // 前置函数声明（供 onclick 直接调用）
+    // ===========================================
+
+    function clearPasteArea() {
+      document.getElementById('pasteArea').value = '';
+    }
+
+    function clearMarkdown() {
+      const markdownOutput = document.getElementById('markdownOutput');
+      markdownOutput.value = '';
+      document.getElementById('preview').innerHTML = '<div class="empty-state">暂无内容预览。请在上方粘贴终端输出以开始使用。</div>';
+      enableCopyButton();
+      showFeedback('markdownFeedback', '✓ Markdown 已清空', 'success');
+    }
+
+    function copyMarkdown() {
+      const markdownText = document.getElementById('markdownOutput').value;
+
+      if (!markdownText || markdownText.trim() === '') {
+        showFeedback('markdownFeedback', '❌ 无内容可复制', 'error');
+        return;
+      }
+
+      navigator.clipboard.writeText(markdownText).then(() => {
+        showFeedback('markdownFeedback', '✓ Markdown 已复制到剪贴板', 'success');
+      }).catch(err => {
+        // 降级方案：使用旧方法
+        const textArea = document.getElementById('markdownOutput');
+        textArea.select();
+        document.execCommand('copy');
+        showFeedback('markdownFeedback', '✓ Markdown 已复制到剪贴板', 'success');
+      });
+    }
+
+    function enableCopyButton() {
+      const markdownText = document.getElementById('markdownOutput').value;
+      const copyButton = document.getElementById('copyButton');
+      copyButton.disabled = !markdownText || markdownText.trim() === '';
+    }
+
+    // ===========================================
     // Utility Functions
+    // ===========================================
+
     function showFeedback(elementId, message, type = 'success') {
       const element = document.getElementById(elementId);
       element.textContent = message;
@@ -531,8 +575,8 @@
     // 检测结构化文本中的分类标题（以符号开头，如 ❌✅🔍等）
     function isCategoryHeader(line) {
       const trimmed = line.trim();
-      // 匹配以 Unicode 符号（如❌✅🔍等）或特定格式开头的行
-      return /^[❌✅🔍\*\-\+\~\→\←]/u.test(trimmed) && trimmed.length < 50;
+      // 匹配以 Unicode 符号（如❌✅🔍等）开头的行，或其他分类符号
+      return /^[❌✅🔍*+~→←]/u.test(trimmed) && trimmed.length < 50;
     }
 
     // 智能推断文本结构，转换为 Markdown
@@ -737,12 +781,6 @@
       return html || '<div class="empty-state">预览不可用</div>';
     }
 
-    function enableCopyButton() {
-      const markdownText = document.getElementById('markdownOutput').value;
-      const copyButton = document.getElementById('copyButton');
-      copyButton.disabled = !markdownText || markdownText.trim() === '';
-    }
-
     // 主要转换函数（异步处理大文本）
     function convertPaste() {
       const pasteAreaText = document.getElementById('pasteArea').value;
@@ -774,36 +812,6 @@
           markdownOutput.disabled = false;
         }
       }, 0);
-    }
-
-    function copyMarkdown() {
-      const markdownText = document.getElementById('markdownOutput').value;
-
-      if (!markdownText || markdownText.trim() === '') {
-        showFeedback('markdownFeedback', '❌ 无内容可复制', 'error');
-        return;
-      }
-
-      navigator.clipboard.writeText(markdownText).then(() => {
-        showFeedback('markdownFeedback', '✓ Markdown 已复制到剪贴板', 'success');
-      }).catch(err => {
-        // 降级方案：使用旧方法
-        const textArea = document.getElementById('markdownOutput');
-        textArea.select();
-        document.execCommand('copy');
-        showFeedback('markdownFeedback', '✓ Markdown 已复制到剪贴板', 'success');
-      });
-    }
-
-    function clearPasteArea() {
-      document.getElementById('pasteArea').value = '';
-    }
-
-    function clearMarkdown() {
-      document.getElementById('markdownOutput').value = '';
-      document.getElementById('preview').innerHTML = '<div class="empty-state">暂无内容预览。请在上方粘贴终端输出以开始使用。</div>';
-      enableCopyButton();
-      showFeedback('markdownFeedback', '✓ Markdown 已清空', 'success');
     }
 
     // 事件监听器绑定函数
