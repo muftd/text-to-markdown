@@ -274,6 +274,39 @@
       font-weight: 400;
     }
 
+    /* 输入类型选择器 */
+    .input-type-selector {
+      display: flex;
+      gap: 0.8rem;
+      margin-top: 0.8rem;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .input-type-selector label {
+      font-family: 'Source Sans 3', sans-serif;
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .input-type-selector input[type="radio"] {
+      accent-color: var(--primary-green);
+      cursor: pointer;
+    }
+
+    .input-type-label {
+      font-family: 'Source Sans 3', sans-serif;
+      font-size: 0.8rem;
+      color: var(--text-secondary);
+      margin-right: 0.8rem;
+      font-weight: 500;
+    }
+
     #preview {
       background: rgba(10, 15, 20, 0.8);
       border: 1px solid var(--border-color);
@@ -406,9 +439,27 @@
 
     <!-- 粘贴输入区 -->
     <div class="section">
-      <div class="section-title">📋 粘贴终端输出</div>
-      <textarea id="pasteArea" placeholder="在此粘贴您的终端输出..."></textarea>
+      <div class="section-title">📋 粘贴内容</div>
+      <textarea id="pasteArea" placeholder="在此粘贴您的内容（终端输出或 Markdown 文本）..."></textarea>
       <div class="info-text">支持纯文本、HTML 和 RTF 格式。ANSI 代码将自动删除。</div>
+
+      <!-- 输入类型选择器 -->
+      <div class="input-type-selector">
+        <span class="input-type-label">内容类型：</span>
+        <label>
+          <input type="radio" name="inputType" value="auto" checked onchange="handleInputTypeChange()">
+          🤖 自动检测
+        </label>
+        <label>
+          <input type="radio" name="inputType" value="terminal" onchange="handleInputTypeChange()">
+          ⌨️ 终端输出
+        </label>
+        <label>
+          <input type="radio" name="inputType" value="markdown" onchange="handleInputTypeChange()">
+          📝 Markdown 文本
+        </label>
+      </div>
+
       <div class="button-group">
         <button onclick="convertFromClipboard()">📥 从剪贴板粘贴</button>
         <button onclick="clearPasteArea()">🗑️ 清空</button>
@@ -469,22 +520,65 @@
       return text;
     }
 
+    // 检测文本是否是 Markdown 格式
+    function detectMarkdownFormat(text) {
+      if (!text) return false;
+
+      // 检查常见的 markdown 标记
+      const markdownPatterns = [
+        /^#+\s+.+$/m,                    // 标题 # ## ###
+        /^[\*\-\+]\s+.+$/m,              // 无序列表 * - +
+        /^\d+\.\s+.+$/m,                 // 有序列表 1. 2.
+        /\*\*[^\*]+\*\*/,                 // 粗体 **text**
+        /\*[^\*]+\*/,                     // 斜体 *text*
+        /\`[^\`]+\`/,                     // 行内代码 `code`
+        /^\`\`\`[\s\S]*?\`\`\`$/m,        // 代码块 ```...```
+        /\[.*?\]\(.*?\)/,                 // 链接 [text](url)
+        /^>+\s+.+$/m,                     // 引用 > quote
+        /^-{3,}$/m,                       // 分割线 ---
+      ];
+
+      // 计算匹配的 markdown 标记数
+      let matchCount = 0;
+      const lines = text.split('\n');
+
+      for (let pattern of markdownPatterns) {
+        if (pattern.test(text)) {
+          matchCount++;
+        }
+      }
+
+      // 如果至少有 2 个 markdown 标记，认为是 markdown 格式
+      return matchCount >= 2;
+    }
+
     function convertTerminalToMarkdown(text) {
       if (!text || text.trim() === '') {
         return '';
       }
 
-      // Step 1: Strip ANSI color codes
+      // 获取用户选择的输入类型
+      const inputType = document.querySelector('input[name="inputType"]:checked').value;
+
+      // 步骤 1：清理 ANSI 代码
       let cleaned = stripAnsiCodes(text);
 
-      // Step 2: Normalize blank lines (3+ becomes 2)
+      // 步骤 2：规范化空行
       cleaned = normalizeBlankLines(cleaned);
 
-      // Step 3: Trim leading/trailing whitespace
+      // 步骤 3：去除首尾空白
       cleaned = cleaned.trim();
 
-      // Step 4: Wrap in fenced code block
-      const markdown = '```text\n' + cleaned + '\n```';
+      // 步骤 4：根据输入类型处理
+      let markdown = '';
+
+      if (inputType === 'markdown' || (inputType === 'auto' && detectMarkdownFormat(cleaned))) {
+        // 输入已经是 Markdown，直接返回
+        markdown = cleaned;
+      } else {
+        // 输入是终端输出或纯文本，用代码块包裹
+        markdown = '```text\n' + cleaned + '\n```';
+      }
 
       return markdown;
     }
@@ -503,35 +597,95 @@
     }
 
     function renderMarkdown(markdownText) {
-      // Very simple markdown renderer for our use case (mostly code blocks)
+      // 改进的 markdown 渲染器，支持列表、标题、代码块等
       let html = '';
       const lines = markdownText.split('\n');
       let inCodeBlock = false;
+      let inList = false;
       let codeContent = [];
+      let codeLanguage = 'text';
 
-      for (let line of lines) {
-        if (line.startsWith('```')) {
+      for (let i = 0; i < lines.length; i++) {
+        const line = lines[i];
+        const trimmed = line.trim();
+
+        // 处理代码块
+        if (trimmed.startsWith('```')) {
           if (!inCodeBlock) {
             inCodeBlock = true;
             codeContent = [];
+            codeLanguage = trimmed.substring(3).trim() || 'text';
           } else {
             inCodeBlock = false;
             const escapedCode = codeContent.join('\n').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-            html += '<code>' + escapedCode + '</code>';
+            html += `<code style="display:block; padding:1rem; background:rgba(0,0,0,0.6); border-radius:4px; color:#91B493; margin:0.5rem 0; font-size:0.9rem; line-height:1.6; overflow-x:auto;">${escapedCode}</code>`;
             codeContent = [];
           }
         } else if (inCodeBlock) {
           codeContent.push(line);
         }
+        // 处理标题
+        else if (trimmed.match(/^#+\s+/)) {
+          const level = trimmed.match(/^#+/)[0].length;
+          const title = trimmed.substring(level).trim();
+          const escapedTitle = title.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+          html += `<h${level} style="margin:1rem 0 0.5rem 0; font-family:'Bricolage Grotesque',sans-serif; color:#91B493;">${escapedTitle}</h${level}>`;
+        }
+        // 处理无序列表
+        else if (trimmed.match(/^[\*\-\+]\s+/)) {
+          if (!inList) {
+            inList = true;
+            html += '<ul style="margin:0.5rem 0; padding-left:1.5rem; color:#e0e6f0;">';
+          }
+          const text = trimmed.substring(2).trim().replace(/</g, '&lt;').replace(/>/g, '&gt;');
+          html += `<li>${text}</li>`;
+        }
+        // 处理有序列表
+        else if (trimmed.match(/^\d+\.\s+/)) {
+          if (!inList) {
+            inList = true;
+            html += '<ol style="margin:0.5rem 0; padding-left:1.5rem; color:#e0e6f0;">';
+          }
+          const text = trimmed.substring(trimmed.indexOf('.') + 1).trim().replace(/</g, '&lt;').replace(/>/g, '&gt;');
+          html += `<li>${text}</li>`;
+        }
+        // 列表结束
+        else if (inList && trimmed.length > 0) {
+          html += '</ul>';
+          inList = false;
+          if (trimmed.length > 0) {
+            const escaped = trimmed.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+            html += `<p style="margin:0.5rem 0; color:#e0e6f0; line-height:1.6;">${escaped}</p>`;
+          }
+        }
+        // 处理普通段落
+        else if (!inCodeBlock && trimmed.length > 0) {
+          const escaped = trimmed.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+          html += `<p style="margin:0.5rem 0; color:#e0e6f0; line-height:1.6;">${escaped}</p>`;
+        }
       }
 
-      return html || '<div class="empty-state">Preview unavailable</div>';
+      // 关闭未关闭的列表
+      if (inList) {
+        html += '</ul>';
+      }
+
+      return html || '<div class="empty-state">预览不可用</div>';
     }
 
     function enableCopyButton() {
       const markdownText = document.getElementById('markdownOutput').value;
       const copyButton = document.getElementById('copyButton');
       copyButton.disabled = !markdownText || markdownText.trim() === '';
+    }
+
+    // 处理输入类型改变
+    function handleInputTypeChange() {
+      // 当用户改变输入类型时，重新转换当前的文本
+      const pasteAreaText = document.getElementById('pasteArea').value;
+      if (pasteAreaText) {
+        convertPaste();
+      }
     }
 
     // 主要事件处理函数
