@@ -1,114 +1,245 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-CN">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Terminal to Markdown Converter</title>
+  <title>终端转 Markdown 转换器</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=Space+Grotesk:wght@700&display=swap" rel="stylesheet">
   <style>
+    :root {
+      --primary-green: #00d95f;
+      --dark-green: #0a2a1a;
+      --bg-primary: #0a0f14;
+      --bg-secondary: #111820;
+      --border-color: #1a2a2a;
+      --text-primary: #e0e6f0;
+      --text-secondary: #8a9ab0;
+      --accent-success: #00d95f;
+      --accent-error: #ff4757;
+      --glow-intensity: 0.4;
+    }
+
     * {
       margin: 0;
       padding: 0;
       box-sizing: border-box;
     }
 
+    html {
+      scroll-behavior: smooth;
+    }
+
     body {
-      font-family: 'Courier New', Courier, monospace;
-      background-color: #000;
-      color: #0f0;
-      line-height: 1.5;
-      padding: 20px;
+      font-family: 'IBM Plex Mono', monospace;
+      background: linear-gradient(135deg, var(--bg-primary) 0%, #0d1a24 50%, var(--bg-primary) 100%);
+      background-attachment: fixed;
+      color: var(--text-primary);
+      line-height: 1.6;
+      padding: 2rem;
       min-height: 100vh;
+      position: relative;
+      overflow-x: hidden;
+    }
+
+    /* 网格背景纹理 */
+    body::before {
+      content: '';
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-image:
+        linear-gradient(0deg, transparent 24%, rgba(0, 217, 95, 0.05) 25%, rgba(0, 217, 95, 0.05) 26%, transparent 27%, transparent 74%, rgba(0, 217, 95, 0.05) 75%, rgba(0, 217, 95, 0.05) 76%, transparent 77%, transparent),
+        linear-gradient(90deg, transparent 24%, rgba(0, 217, 95, 0.05) 25%, rgba(0, 217, 95, 0.05) 26%, transparent 27%, transparent 74%, rgba(0, 217, 95, 0.05) 75%, rgba(0, 217, 95, 0.05) 76%, transparent 77%, transparent);
+      background-size: 60px 60px;
+      pointer-events: none;
+      z-index: 0;
     }
 
     .container {
-      max-width: 1200px;
+      max-width: 1100px;
       margin: 0 auto;
+      position: relative;
+      z-index: 1;
     }
 
     h1 {
-      font-size: 1.5em;
-      margin-bottom: 20px;
-      text-shadow: 0 0 10px rgba(0, 255, 0, 0.5);
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 2.2rem;
+      margin-bottom: 0.5rem;
+      background: linear-gradient(135deg, var(--primary-green) 0%, #00ff7f 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      font-weight: 700;
+      letter-spacing: 1px;
+      text-shadow: 0 0 20px rgba(0, 217, 95, 0.3);
+      animation: fadeInDown 0.8s ease-out;
+    }
+
+    .subtitle {
+      color: var(--text-secondary);
+      font-size: 0.95rem;
+      margin-bottom: 2rem;
+      font-style: italic;
+      animation: fadeInUp 0.8s ease-out 0.1s both;
     }
 
     .section {
-      margin-bottom: 30px;
-      border: 1px solid #0f0;
-      padding: 15px;
-      background-color: #001a00;
-      border-radius: 4px;
+      margin-bottom: 2.5rem;
+      background: linear-gradient(135deg, var(--bg-secondary) 0%, rgba(26, 42, 42, 0.3) 100%);
+      border: 1px solid var(--border-color);
+      padding: 1.8rem;
+      border-radius: 12px;
+      backdrop-filter: blur(10px);
+      position: relative;
+      overflow: hidden;
+      transition: all 0.4s cubic-bezier(0.23, 1, 0.320, 1);
+      animation: slideInUp 0.6s ease-out;
+      animation-fill-mode: both;
+    }
+
+    .section:nth-child(1) { animation-delay: 0.1s; }
+    .section:nth-child(2) { animation-delay: 0.2s; }
+    .section:nth-child(3) { animation-delay: 0.3s; }
+
+    .section::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      right: -50%;
+      width: 100%;
+      height: 100%;
+      background: radial-gradient(circle, rgba(0, 217, 95, 0.1) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    .section:hover {
+      border-color: var(--primary-green);
+      box-shadow: 0 0 20px rgba(0, 217, 95, 0.15), inset 0 0 20px rgba(0, 217, 95, 0.05);
+      transform: translateY(-4px);
     }
 
     .section-title {
-      font-weight: bold;
-      margin-bottom: 10px;
-      color: #0f0;
+      font-weight: 600;
+      margin-bottom: 1rem;
+      color: var(--primary-green);
       text-transform: uppercase;
-      font-size: 0.9em;
+      font-size: 0.85rem;
+      letter-spacing: 2px;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .section-title::before {
+      content: '';
+      width: 8px;
+      height: 8px;
+      background: var(--primary-green);
+      border-radius: 50%;
+      animation: pulse 2s ease-in-out infinite;
     }
 
     textarea {
       width: 100%;
-      font-family: 'Courier New', Courier, monospace;
-      background-color: #000;
-      color: #0f0;
-      border: 1px solid #0f0;
-      padding: 10px;
-      border-radius: 4px;
+      font-family: 'IBM Plex Mono', monospace;
+      background: rgba(10, 15, 20, 0.8);
+      color: var(--text-primary);
+      border: 1px solid var(--border-color);
+      padding: 1rem;
+      border-radius: 8px;
       resize: vertical;
       min-height: 120px;
-      line-height: 1.5;
+      line-height: 1.6;
+      font-size: 0.95rem;
+      transition: all 0.3s ease;
+      backdrop-filter: blur(5px);
+    }
+
+    textarea::placeholder {
+      color: var(--text-secondary);
+      opacity: 0.7;
     }
 
     textarea:focus {
       outline: none;
-      box-shadow: 0 0 10px rgba(0, 255, 0, 0.5);
-      border-color: #0f0;
+      border-color: var(--primary-green);
+      box-shadow: 0 0 0 3px rgba(0, 217, 95, 0.1), inset 0 0 10px rgba(0, 217, 95, 0.05);
+      background: rgba(10, 15, 20, 0.95);
     }
 
     .button-group {
       display: flex;
-      gap: 10px;
-      margin-top: 10px;
+      gap: 1rem;
+      margin-top: 1.2rem;
       flex-wrap: wrap;
     }
 
     button {
-      font-family: 'Courier New', Courier, monospace;
-      background-color: #0f0;
+      font-family: 'IBM Plex Mono', monospace;
+      background: linear-gradient(135deg, var(--primary-green) 0%, #00ff7f 100%);
       color: #000;
-      border: 1px solid #0f0;
-      padding: 10px 20px;
-      border-radius: 4px;
+      border: none;
+      padding: 0.8rem 1.6rem;
+      border-radius: 8px;
       cursor: pointer;
-      font-weight: bold;
-      font-size: 0.9em;
+      font-weight: 600;
+      font-size: 0.9rem;
       text-transform: uppercase;
-      transition: all 0.3s ease;
+      letter-spacing: 1px;
+      transition: all 0.3s cubic-bezier(0.23, 1, 0.320, 1);
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 4px 12px rgba(0, 217, 95, 0.2);
     }
 
-    button:hover {
-      background-color: #00ff00;
-      box-shadow: 0 0 10px rgba(0, 255, 0, 0.7);
+    button::before {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 0;
+      height: 0;
+      background: rgba(255, 255, 255, 0.3);
+      border-radius: 50%;
+      transform: translate(-50%, -50%);
+      transition: width 0.6s, height 0.6s;
     }
 
-    button:active {
-      transform: scale(0.98);
+    button:hover:not(:disabled) {
+      background: linear-gradient(135deg, #00ff7f 0%, var(--primary-green) 100%);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(0, 217, 95, 0.4);
+    }
+
+    button:hover:not(:disabled)::before {
+      width: 300px;
+      height: 300px;
+    }
+
+    button:active:not(:disabled) {
+      transform: translateY(0);
     }
 
     button:disabled {
-      background-color: #444;
-      color: #666;
+      background: linear-gradient(135deg, #555 0%, #333 100%);
+      color: #999;
       cursor: not-allowed;
-      border-color: #444;
+      box-shadow: none;
+      opacity: 0.5;
     }
 
     .feedback {
-      margin-top: 10px;
-      padding: 10px;
-      border-radius: 4px;
+      margin-top: 1rem;
+      padding: 1rem;
+      border-radius: 8px;
       display: none;
-      font-size: 0.9em;
+      font-size: 0.9rem;
+      animation: slideDown 0.4s ease-out;
     }
 
     .feedback.show {
@@ -116,62 +247,130 @@
     }
 
     .feedback.success {
-      background-color: #001a00;
-      border: 1px solid #0f0;
-      color: #0f0;
+      background: rgba(0, 217, 95, 0.1);
+      border: 1px solid var(--accent-success);
+      color: var(--accent-success);
+      box-shadow: 0 0 10px rgba(0, 217, 95, 0.15);
     }
 
     .feedback.error {
-      background-color: #1a0000;
-      border: 1px solid #ff0000;
-      color: #ff6666;
+      background: rgba(255, 71, 87, 0.1);
+      border: 1px solid var(--accent-error);
+      color: #ff6b7a;
+      box-shadow: 0 0 10px rgba(255, 71, 87, 0.15);
     }
 
     .info-text {
-      font-size: 0.85em;
-      color: #0a0;
-      margin-top: 8px;
-      opacity: 0.8;
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+      margin-top: 0.8rem;
+      opacity: 0.85;
     }
 
     #preview {
-      background-color: #001a00;
-      border: 1px solid #0f0;
-      padding: 15px;
-      border-radius: 4px;
+      background: rgba(10, 15, 20, 0.8);
+      border: 1px solid var(--border-color);
+      padding: 1.5rem;
+      border-radius: 8px;
       min-height: 150px;
       word-wrap: break-word;
       white-space: pre-wrap;
       overflow-x: auto;
+      transition: all 0.3s ease;
+    }
+
+    #preview:hover {
+      border-color: var(--primary-green);
+      box-shadow: inset 0 0 10px rgba(0, 217, 95, 0.05);
     }
 
     #preview code {
-      background-color: #000;
-      border: 1px solid #0f0;
-      padding: 10px;
+      background: rgba(0, 0, 0, 0.6);
+      border: 1px solid var(--border-color);
+      padding: 1.2rem;
       display: block;
-      border-radius: 4px;
-      color: #0f0;
-      font-family: 'Courier New', Courier, monospace;
+      border-radius: 6px;
+      color: var(--primary-green);
+      font-family: 'IBM Plex Mono', monospace;
+      line-height: 1.6;
+      font-size: 0.9rem;
     }
 
     .empty-state {
-      color: #0a0;
-      opacity: 0.6;
+      color: var(--text-secondary);
+      opacity: 0.7;
       font-style: italic;
+      text-align: center;
+      padding: 2rem;
     }
 
+    /* 动画定义 */
+    @keyframes fadeInDown {
+      from {
+        opacity: 0;
+        transform: translateY(-20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @keyframes slideInUp {
+      from {
+        opacity: 0;
+        transform: translateY(30px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @keyframes slideDown {
+      from {
+        opacity: 0;
+        transform: translateY(-10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @keyframes pulse {
+      0%, 100% {
+        opacity: 1;
+      }
+      50% {
+        opacity: 0.3;
+      }
+    }
+
+    /* 响应式设计 */
     @media (max-width: 768px) {
       body {
-        padding: 10px;
+        padding: 1rem;
       }
 
       h1 {
-        font-size: 1.2em;
+        font-size: 1.5rem;
       }
 
       .section {
-        padding: 10px;
+        padding: 1.2rem;
+        margin-bottom: 1.5rem;
       }
 
       textarea {
@@ -181,6 +380,7 @@
 
       .button-group {
         flex-direction: column;
+        gap: 0.8rem;
       }
 
       button {
@@ -191,36 +391,37 @@
 </head>
 <body>
   <div class="container">
-    <h1>⚡ Terminal → Markdown Converter</h1>
+    <h1>⚡ Terminal → Markdown</h1>
+    <p class="subtitle">将终端输出优雅地转换为 Markdown 格式 • 用于 Obsidian 和其他笔记应用</p>
 
-    <!-- Paste Input Section -->
+    <!-- 粘贴输入区 -->
     <div class="section">
-      <div class="section-title">📋 Paste Terminal Output</div>
-      <textarea id="pasteArea" placeholder="Paste your terminal output here..."></textarea>
-      <div class="info-text">Supports plain text, HTML, and RTF formats. ANSI codes will be stripped automatically.</div>
+      <div class="section-title">📋 粘贴终端输出</div>
+      <textarea id="pasteArea" placeholder="在此粘贴您的终端输出..."></textarea>
+      <div class="info-text">支持纯文本、HTML 和 RTF 格式。ANSI 代码将自动删除。</div>
       <div class="button-group">
-        <button onclick="convertFromClipboard()">📥 Paste from Clipboard</button>
-        <button onclick="clearPasteArea()">🗑️ Clear</button>
+        <button onclick="convertFromClipboard()">📥 从剪贴板粘贴</button>
+        <button onclick="clearPasteArea()">🗑️ 清空</button>
       </div>
       <div id="pasteFeeback" class="feedback"></div>
     </div>
 
-    <!-- Markdown Output Section -->
+    <!-- Markdown 输出区 -->
     <div class="section">
-      <div class="section-title">📝 Generated Markdown</div>
-      <textarea id="markdownOutput" placeholder="Your markdown will appear here..."></textarea>
+      <div class="section-title">📝 生成的 Markdown</div>
+      <textarea id="markdownOutput" placeholder="您的 Markdown 将在此显示..."></textarea>
       <div class="button-group">
-        <button id="copyButton" onclick="copyMarkdown()" disabled>📋 Copy Markdown</button>
-        <button onclick="clearMarkdown()">🗑️ Clear</button>
+        <button id="copyButton" onclick="copyMarkdown()" disabled>📋 复制 Markdown</button>
+        <button onclick="clearMarkdown()">🗑️ 清空</button>
       </div>
       <div id="markdownFeedback" class="feedback"></div>
     </div>
 
-    <!-- Preview Section -->
+    <!-- 预览区 -->
     <div class="section">
-      <div class="section-title">👁️ Markdown Preview</div>
+      <div class="section-title">👁️ Markdown 预览</div>
       <div id="preview" class="empty-state">
-        <div>No markdown to preview yet. Paste terminal output above to get started.</div>
+        <div>暂无内容预览。请在上方粘贴终端输出以开始使用。</div>
       </div>
     </div>
   </div>
@@ -323,18 +524,18 @@
       copyButton.disabled = !markdownText || markdownText.trim() === '';
     }
 
-    // Main Event Handlers
+    // 主要事件处理函数
     function convertFromClipboard() {
       navigator.clipboard.read().then(items => {
         if (items.length === 0) {
-          showFeedback('pasteFeeback', '❌ No content in clipboard', 'error');
+          showFeedback('pasteFeeback', '❌ 剪贴板中无内容', 'error');
           return;
         }
 
         const item = items[0];
         let textPromise = null;
 
-        // Priority: RTF > HTML > Plain Text
+        // 优先级：RTF > HTML > 纯文本
         if (item.types.includes('text/rtf')) {
           textPromise = item.getType('text/rtf').then(blob => blob.text());
         } else if (item.types.includes('text/html')) {
@@ -346,25 +547,25 @@
         }
 
         if (!textPromise) {
-          showFeedback('pasteFeeback', '❌ Unsupported clipboard format', 'error');
+          showFeedback('pasteFeeback', '❌ 不支持的剪贴板格式', 'error');
           return;
         }
 
         textPromise.then(text => {
           document.getElementById('pasteArea').value = text;
           convertPaste();
-          showFeedback('pasteFeeback', '✓ Content pasted successfully', 'success');
+          showFeedback('pasteFeeback', '✓ 粘贴成功', 'success');
         }).catch(err => {
-          showFeedback('pasteFeeback', '❌ Failed to read clipboard: ' + err.message, 'error');
+          showFeedback('pasteFeeback', '❌ 读取剪贴板失败：' + err.message, 'error');
         });
       }).catch(err => {
-        // Fallback: Try standard clipboard API
+        // 降级方案：尝试标准 Clipboard API
         navigator.clipboard.readText().then(text => {
           document.getElementById('pasteArea').value = text;
           convertPaste();
-          showFeedback('pasteFeeback', '✓ Content pasted successfully', 'success');
+          showFeedback('pasteFeeback', '✓ 粘贴成功', 'success');
         }).catch(fallbackErr => {
-          showFeedback('pasteFeeback', '❌ Clipboard access denied. Please paste manually with Ctrl+V', 'error');
+          showFeedback('pasteFeeback', '❌ 剪贴板访问被拒绝。请使用 Ctrl+V 手动粘贴', 'error');
         });
       });
     }
@@ -381,34 +582,34 @@
       const markdownText = document.getElementById('markdownOutput').value;
 
       if (!markdownText || markdownText.trim() === '') {
-        showFeedback('markdownFeedback', '❌ Nothing to copy', 'error');
+        showFeedback('markdownFeedback', '❌ 无内容可复制', 'error');
         return;
       }
 
       navigator.clipboard.writeText(markdownText).then(() => {
-        showFeedback('markdownFeedback', '✓ Markdown copied to clipboard!', 'success');
+        showFeedback('markdownFeedback', '✓ Markdown 已复制到剪贴板', 'success');
       }).catch(err => {
-        // Fallback: Use old method
+        // 降级方案：使用旧方法
         const textArea = document.getElementById('markdownOutput');
         textArea.select();
         document.execCommand('copy');
-        showFeedback('markdownFeedback', '✓ Markdown copied to clipboard!', 'success');
+        showFeedback('markdownFeedback', '✓ Markdown 已复制到剪贴板', 'success');
       });
     }
 
     function clearPasteArea() {
       document.getElementById('pasteArea').value = '';
-      showFeedback('pasteFeeback', '✓ Paste area cleared', 'success');
+      showFeedback('pasteFeeback', '✓ 粘贴区已清空', 'success');
     }
 
     function clearMarkdown() {
       document.getElementById('markdownOutput').value = '';
-      document.getElementById('preview').innerHTML = '<div class="empty-state">No markdown to preview yet. Paste terminal output above to get started.</div>';
+      document.getElementById('preview').innerHTML = '<div class="empty-state">暂无内容预览。请在上方粘贴终端输出以开始使用。</div>';
       enableCopyButton();
-      showFeedback('markdownFeedback', '✓ Markdown cleared', 'success');
+      showFeedback('markdownFeedback', '✓ Markdown 已清空', 'success');
     }
 
-    // Event Listeners
+    // 事件监听器
     document.getElementById('pasteArea').addEventListener('input', () => {
       convertPaste();
     });
@@ -418,16 +619,16 @@
       enableCopyButton();
     });
 
-    // Initialize
+    // 初始化
     window.addEventListener('load', () => {
       enableCopyButton();
     });
 
-    // Allow Ctrl+V paste
+    // 允许 Ctrl+V 粘贴
     document.getElementById('pasteArea').addEventListener('paste', (e) => {
       setTimeout(() => {
         convertPaste();
-        showFeedback('pasteFeeback', '✓ Content pasted and converted', 'success');
+        showFeedback('pasteFeeback', '✓ 内容粘贴并已转换', 'success');
       }, 0);
     });
   </script>
