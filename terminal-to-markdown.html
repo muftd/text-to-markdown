@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Terminal to Markdown Converter</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Courier New', Courier, monospace;
+      background-color: #000;
+      color: #0f0;
+      line-height: 1.5;
+      padding: 20px;
+      min-height: 100vh;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    h1 {
+      font-size: 1.5em;
+      margin-bottom: 20px;
+      text-shadow: 0 0 10px rgba(0, 255, 0, 0.5);
+    }
+
+    .section {
+      margin-bottom: 30px;
+      border: 1px solid #0f0;
+      padding: 15px;
+      background-color: #001a00;
+      border-radius: 4px;
+    }
+
+    .section-title {
+      font-weight: bold;
+      margin-bottom: 10px;
+      color: #0f0;
+      text-transform: uppercase;
+      font-size: 0.9em;
+    }
+
+    textarea {
+      width: 100%;
+      font-family: 'Courier New', Courier, monospace;
+      background-color: #000;
+      color: #0f0;
+      border: 1px solid #0f0;
+      padding: 10px;
+      border-radius: 4px;
+      resize: vertical;
+      min-height: 120px;
+      line-height: 1.5;
+    }
+
+    textarea:focus {
+      outline: none;
+      box-shadow: 0 0 10px rgba(0, 255, 0, 0.5);
+      border-color: #0f0;
+    }
+
+    .button-group {
+      display: flex;
+      gap: 10px;
+      margin-top: 10px;
+      flex-wrap: wrap;
+    }
+
+    button {
+      font-family: 'Courier New', Courier, monospace;
+      background-color: #0f0;
+      color: #000;
+      border: 1px solid #0f0;
+      padding: 10px 20px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-weight: bold;
+      font-size: 0.9em;
+      text-transform: uppercase;
+      transition: all 0.3s ease;
+    }
+
+    button:hover {
+      background-color: #00ff00;
+      box-shadow: 0 0 10px rgba(0, 255, 0, 0.7);
+    }
+
+    button:active {
+      transform: scale(0.98);
+    }
+
+    button:disabled {
+      background-color: #444;
+      color: #666;
+      cursor: not-allowed;
+      border-color: #444;
+    }
+
+    .feedback {
+      margin-top: 10px;
+      padding: 10px;
+      border-radius: 4px;
+      display: none;
+      font-size: 0.9em;
+    }
+
+    .feedback.show {
+      display: block;
+    }
+
+    .feedback.success {
+      background-color: #001a00;
+      border: 1px solid #0f0;
+      color: #0f0;
+    }
+
+    .feedback.error {
+      background-color: #1a0000;
+      border: 1px solid #ff0000;
+      color: #ff6666;
+    }
+
+    .info-text {
+      font-size: 0.85em;
+      color: #0a0;
+      margin-top: 8px;
+      opacity: 0.8;
+    }
+
+    #preview {
+      background-color: #001a00;
+      border: 1px solid #0f0;
+      padding: 15px;
+      border-radius: 4px;
+      min-height: 150px;
+      word-wrap: break-word;
+      white-space: pre-wrap;
+      overflow-x: auto;
+    }
+
+    #preview code {
+      background-color: #000;
+      border: 1px solid #0f0;
+      padding: 10px;
+      display: block;
+      border-radius: 4px;
+      color: #0f0;
+      font-family: 'Courier New', Courier, monospace;
+    }
+
+    .empty-state {
+      color: #0a0;
+      opacity: 0.6;
+      font-style: italic;
+    }
+
+    @media (max-width: 768px) {
+      body {
+        padding: 10px;
+      }
+
+      h1 {
+        font-size: 1.2em;
+      }
+
+      .section {
+        padding: 10px;
+      }
+
+      textarea {
+        min-height: 100px;
+        font-size: 14px;
+      }
+
+      .button-group {
+        flex-direction: column;
+      }
+
+      button {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>⚡ Terminal → Markdown Converter</h1>
+
+    <!-- Paste Input Section -->
+    <div class="section">
+      <div class="section-title">📋 Paste Terminal Output</div>
+      <textarea id="pasteArea" placeholder="Paste your terminal output here..."></textarea>
+      <div class="info-text">Supports plain text, HTML, and RTF formats. ANSI codes will be stripped automatically.</div>
+      <div class="button-group">
+        <button onclick="convertFromClipboard()">📥 Paste from Clipboard</button>
+        <button onclick="clearPasteArea()">🗑️ Clear</button>
+      </div>
+      <div id="pasteFeeback" class="feedback"></div>
+    </div>
+
+    <!-- Markdown Output Section -->
+    <div class="section">
+      <div class="section-title">📝 Generated Markdown</div>
+      <textarea id="markdownOutput" placeholder="Your markdown will appear here..."></textarea>
+      <div class="button-group">
+        <button id="copyButton" onclick="copyMarkdown()" disabled>📋 Copy Markdown</button>
+        <button onclick="clearMarkdown()">🗑️ Clear</button>
+      </div>
+      <div id="markdownFeedback" class="feedback"></div>
+    </div>
+
+    <!-- Preview Section -->
+    <div class="section">
+      <div class="section-title">👁️ Markdown Preview</div>
+      <div id="preview" class="empty-state">
+        <div>No markdown to preview yet. Paste terminal output above to get started.</div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Configuration
+    const CONFIG = {
+      ansiRegex: /\x1b\[[0-9;]*m/g,
+      consecutiveBlankLineRegex: /\n\n\n+/g,
+      maxConsecutiveBlankLines: '\n\n'
+    };
+
+    // Utility Functions
+    function showFeedback(elementId, message, type = 'success') {
+      const element = document.getElementById(elementId);
+      element.textContent = message;
+      element.className = `feedback show ${type}`;
+      setTimeout(() => {
+        element.classList.remove('show');
+      }, 3000);
+    }
+
+    function stripAnsiCodes(text) {
+      return text.replace(CONFIG.ansiRegex, '');
+    }
+
+    function normalizeBlankLines(text) {
+      return text.replace(CONFIG.consecutiveBlankLineRegex, CONFIG.maxConsecutiveBlankLines);
+    }
+
+    function extractPlainTextFromHtml(html) {
+      const div = document.createElement('div');
+      div.innerHTML = html;
+      let text = div.innerText || div.textContent || '';
+      return text;
+    }
+
+    function convertTerminalToMarkdown(text) {
+      if (!text || text.trim() === '') {
+        return '';
+      }
+
+      // Step 1: Strip ANSI color codes
+      let cleaned = stripAnsiCodes(text);
+
+      // Step 2: Normalize blank lines (3+ becomes 2)
+      cleaned = normalizeBlankLines(cleaned);
+
+      // Step 3: Trim leading/trailing whitespace
+      cleaned = cleaned.trim();
+
+      // Step 4: Wrap in fenced code block
+      const markdown = '```text\n' + cleaned + '\n```';
+
+      return markdown;
+    }
+
+    function updatePreview(markdownText) {
+      const previewElement = document.getElementById('preview');
+
+      if (!markdownText || markdownText.trim() === '') {
+        previewElement.innerHTML = '<div class="empty-state">No markdown to preview yet. Paste terminal output above to get started.</div>';
+        return;
+      }
+
+      // Parse and render markdown (simplified)
+      const html = renderMarkdown(markdownText);
+      previewElement.innerHTML = html;
+    }
+
+    function renderMarkdown(markdownText) {
+      // Very simple markdown renderer for our use case (mostly code blocks)
+      let html = '';
+      const lines = markdownText.split('\n');
+      let inCodeBlock = false;
+      let codeContent = [];
+
+      for (let line of lines) {
+        if (line.startsWith('```')) {
+          if (!inCodeBlock) {
+            inCodeBlock = true;
+            codeContent = [];
+          } else {
+            inCodeBlock = false;
+            const escapedCode = codeContent.join('\n').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+            html += '<code>' + escapedCode + '</code>';
+            codeContent = [];
+          }
+        } else if (inCodeBlock) {
+          codeContent.push(line);
+        }
+      }
+
+      return html || '<div class="empty-state">Preview unavailable</div>';
+    }
+
+    function enableCopyButton() {
+      const markdownText = document.getElementById('markdownOutput').value;
+      const copyButton = document.getElementById('copyButton');
+      copyButton.disabled = !markdownText || markdownText.trim() === '';
+    }
+
+    // Main Event Handlers
+    function convertFromClipboard() {
+      navigator.clipboard.read().then(items => {
+        if (items.length === 0) {
+          showFeedback('pasteFeeback', '❌ No content in clipboard', 'error');
+          return;
+        }
+
+        const item = items[0];
+        let textPromise = null;
+
+        // Priority: RTF > HTML > Plain Text
+        if (item.types.includes('text/rtf')) {
+          textPromise = item.getType('text/rtf').then(blob => blob.text());
+        } else if (item.types.includes('text/html')) {
+          textPromise = item.getType('text/html').then(blob => {
+            return blob.text().then(html => extractPlainTextFromHtml(html));
+          });
+        } else if (item.types.includes('text/plain')) {
+          textPromise = item.getType('text/plain').then(blob => blob.text());
+        }
+
+        if (!textPromise) {
+          showFeedback('pasteFeeback', '❌ Unsupported clipboard format', 'error');
+          return;
+        }
+
+        textPromise.then(text => {
+          document.getElementById('pasteArea').value = text;
+          convertPaste();
+          showFeedback('pasteFeeback', '✓ Content pasted successfully', 'success');
+        }).catch(err => {
+          showFeedback('pasteFeeback', '❌ Failed to read clipboard: ' + err.message, 'error');
+        });
+      }).catch(err => {
+        // Fallback: Try standard clipboard API
+        navigator.clipboard.readText().then(text => {
+          document.getElementById('pasteArea').value = text;
+          convertPaste();
+          showFeedback('pasteFeeback', '✓ Content pasted successfully', 'success');
+        }).catch(fallbackErr => {
+          showFeedback('pasteFeeback', '❌ Clipboard access denied. Please paste manually with Ctrl+V', 'error');
+        });
+      });
+    }
+
+    function convertPaste() {
+      const pasteAreaText = document.getElementById('pasteArea').value;
+      const markdown = convertTerminalToMarkdown(pasteAreaText);
+      document.getElementById('markdownOutput').value = markdown;
+      updatePreview(markdown);
+      enableCopyButton();
+    }
+
+    function copyMarkdown() {
+      const markdownText = document.getElementById('markdownOutput').value;
+
+      if (!markdownText || markdownText.trim() === '') {
+        showFeedback('markdownFeedback', '❌ Nothing to copy', 'error');
+        return;
+      }
+
+      navigator.clipboard.writeText(markdownText).then(() => {
+        showFeedback('markdownFeedback', '✓ Markdown copied to clipboard!', 'success');
+      }).catch(err => {
+        // Fallback: Use old method
+        const textArea = document.getElementById('markdownOutput');
+        textArea.select();
+        document.execCommand('copy');
+        showFeedback('markdownFeedback', '✓ Markdown copied to clipboard!', 'success');
+      });
+    }
+
+    function clearPasteArea() {
+      document.getElementById('pasteArea').value = '';
+      showFeedback('pasteFeeback', '✓ Paste area cleared', 'success');
+    }
+
+    function clearMarkdown() {
+      document.getElementById('markdownOutput').value = '';
+      document.getElementById('preview').innerHTML = '<div class="empty-state">No markdown to preview yet. Paste terminal output above to get started.</div>';
+      enableCopyButton();
+      showFeedback('markdownFeedback', '✓ Markdown cleared', 'success');
+    }
+
+    // Event Listeners
+    document.getElementById('pasteArea').addEventListener('input', () => {
+      convertPaste();
+    });
+
+    document.getElementById('markdownOutput').addEventListener('input', () => {
+      updatePreview(document.getElementById('markdownOutput').value);
+      enableCopyButton();
+    });
+
+    // Initialize
+    window.addEventListener('load', () => {
+      enableCopyButton();
+    });
+
+    // Allow Ctrl+V paste
+    document.getElementById('pasteArea').addEventListener('paste', (e) => {
+      setTimeout(() => {
+        convertPaste();
+        showFeedback('pasteFeeback', '✓ Content pasted and converted', 'success');
+      }, 0);
+    });
+  </script>
+</body>
+</html>
