@@ -314,6 +314,33 @@
       font-weight: 400;
     }
 
+    /* Loading 状态 */
+    .loading {
+      position: relative;
+      pointer-events: none;
+      opacity: 0.6;
+    }
+
+    .loading::after {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 20px;
+      height: 20px;
+      border: 2px solid var(--primary-green);
+      border-radius: 50%;
+      border-top-color: transparent;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+      to {
+        transform: translate(-50%, -50%) rotate(360deg);
+      }
+    }
+
     /* 动画定义 */
     @keyframes fadeInDown {
       from {
@@ -716,13 +743,37 @@
       copyButton.disabled = !markdownText || markdownText.trim() === '';
     }
 
-    // 主要转换函数
+    // 主要转换函数（异步处理大文本）
     function convertPaste() {
       const pasteAreaText = document.getElementById('pasteArea').value;
-      const markdown = convertTerminalToMarkdown(pasteAreaText);
-      document.getElementById('markdownOutput').value = markdown;
-      updatePreview(markdown);
-      enableCopyButton();
+      const markdownOutput = document.getElementById('markdownOutput');
+
+      if (!pasteAreaText || pasteAreaText.trim() === '') {
+        markdownOutput.value = '';
+        return;
+      }
+
+      // 显示 loading 状态
+      markdownOutput.classList.add('loading');
+      markdownOutput.disabled = true;
+
+      // 使用 setTimeout 让 UI 先更新
+      setTimeout(() => {
+        try {
+          const markdown = convertTerminalToMarkdown(pasteAreaText);
+          markdownOutput.value = markdown;
+          updatePreview(markdown);
+          enableCopyButton();
+        } catch (error) {
+          console.error('转换错误:', error);
+          markdownOutput.value = '';
+          showFeedback('pasteFeeback', '❌ 转换失败：' + error.message, 'error');
+        } finally {
+          // 移除 loading 状态
+          markdownOutput.classList.remove('loading');
+          markdownOutput.disabled = false;
+        }
+      }, 0);
     }
 
     function copyMarkdown() {
@@ -755,28 +806,44 @@
       showFeedback('markdownFeedback', '✓ Markdown 已清空', 'success');
     }
 
-    // 事件监听器
-    document.getElementById('pasteArea').addEventListener('input', () => {
-      convertPaste();
-    });
+    // 事件监听器绑定函数
+    function bindEventListeners() {
+      const pasteArea = document.getElementById('pasteArea');
+      const markdownOutput = document.getElementById('markdownOutput');
 
-    document.getElementById('markdownOutput').addEventListener('input', () => {
-      updatePreview(document.getElementById('markdownOutput').value);
-      enableCopyButton();
-    });
+      if (!pasteArea || !markdownOutput) {
+        console.error('无法找到必要的 DOM 元素');
+        return;
+      }
 
-    // 初始化
-    window.addEventListener('load', () => {
-      enableCopyButton();
-    });
-
-    // 允许 Ctrl+V 粘贴
-    document.getElementById('pasteArea').addEventListener('paste', (e) => {
-      setTimeout(() => {
+      // 输入框的 input 事件监听（自动转换）
+      pasteArea.addEventListener('input', () => {
         convertPaste();
-        showFeedback('pasteFeeback', '✓ 内容粘贴并已转换', 'success');
-      }, 0);
-    });
+      });
+
+      // Markdown 输出框的 input 事件监听（更新预览）
+      markdownOutput.addEventListener('input', () => {
+        updatePreview(markdownOutput.value);
+        enableCopyButton();
+      });
+
+      // 粘贴事件监听（额外提示）
+      pasteArea.addEventListener('paste', (e) => {
+        setTimeout(() => {
+          showFeedback('pasteFeeback', '✓ 正在转换...', 'success');
+        }, 100);
+      });
+
+      // 初始化按钮状态
+      enableCopyButton();
+    }
+
+    // 确保 DOM 加载完成后再绑定事件
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', bindEventListeners);
+    } else {
+      bindEventListeners();
+    }
   </script>
 </body>
 </html>
