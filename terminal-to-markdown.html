@@ -458,6 +458,10 @@
           <input type="radio" name="inputType" value="markdown" onchange="handleInputTypeChange()">
           📝 Markdown 文本
         </label>
+        <label>
+          <input type="radio" name="inputType" value="infer" onchange="handleInputTypeChange()">
+          📊 智能推断
+        </label>
       </div>
 
       <div class="button-group">
@@ -552,6 +556,80 @@
       return matchCount >= 2;
     }
 
+    // 检测结构化文本中的分类标题（以符号开头，如 ❌✅🔍等）
+    function isCategoryHeader(line) {
+      const trimmed = line.trim();
+      // 匹配以 Unicode 符号（如❌✅🔍等）或特定格式开头的行
+      return /^[❌✅🔍\*\-\+\~\→\←]/u.test(trimmed) && trimmed.length < 50;
+    }
+
+    // 智能推断文本结构，转换为 Markdown
+    function inferMarkdownStructure(text) {
+      const lines = text.split('\n');
+      let markdown = '';
+      let i = 0;
+
+      while (i < lines.length) {
+        const line = lines[i];
+        const trimmed = line.trim();
+
+        // 跳过空行
+        if (trimmed === '') {
+          markdown += '\n';
+          i++;
+          continue;
+        }
+
+        // 检测分类标题（符号开头）
+        if (isCategoryHeader(trimmed)) {
+          markdown += `## ${trimmed}\n`;
+          i++;
+
+          // 收集该分类下的列表项
+          const items = [];
+          while (i < lines.length) {
+            const nextLine = lines[i];
+            const nextTrimmed = nextLine.trim();
+
+            // 遇到空行或下一个分类标题，停止收集
+            if (nextTrimmed === '') {
+              markdown += '\n';
+              i++;
+              break;
+            }
+            if (isCategoryHeader(nextTrimmed)) {
+              break;
+            }
+
+            // 收集列表项
+            if (nextTrimmed.length > 0) {
+              items.push(`* ${nextTrimmed}`);
+            }
+            i++;
+          }
+
+          // 添加列表项到 markdown
+          if (items.length > 0) {
+            markdown += items.join('\n') + '\n';
+          }
+        }
+        // 普通标题或段落（行较长）
+        else if (trimmed.length > 0) {
+          // 检查是否是全大写或特殊格式的标题
+          if (trimmed.length < 60 && (trimmed === trimmed.toUpperCase() || trimmed.match(/^[0-9]+\./) || trimmed.match(/^#+/))) {
+            markdown += `## ${trimmed}\n`;
+          } else {
+            markdown += `${trimmed}\n`;
+          }
+          i++;
+        } else {
+          i++;
+        }
+      }
+
+      return markdown.trim();
+    }
+
     function convertTerminalToMarkdown(text) {
       if (!text || text.trim() === '') {
         return '';
@@ -572,7 +650,10 @@
       // 步骤 4：根据输入类型处理
       let markdown = '';
 
-      if (inputType === 'markdown' || (inputType === 'auto' && detectMarkdownFormat(cleaned))) {
+      if (inputType === 'infer') {
+        // 智能推断模式：推断结构并生成 Markdown
+        markdown = inferMarkdownStructure(cleaned);
+      } else if (inputType === 'markdown' || (inputType === 'auto' && detectMarkdownFormat(cleaned))) {
         // 输入已经是 Markdown，直接返回
         markdown = cleaned;
       } else {
