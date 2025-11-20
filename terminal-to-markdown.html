@@ -274,39 +274,6 @@
       font-weight: 400;
     }
 
-    /* 输入类型选择器 */
-    .input-type-selector {
-      display: flex;
-      gap: 0.8rem;
-      margin-top: 0.8rem;
-      align-items: center;
-      flex-wrap: wrap;
-    }
-
-    .input-type-selector label {
-      font-family: 'Source Sans 3', sans-serif;
-      font-size: 0.85rem;
-      color: var(--text-secondary);
-      display: flex;
-      align-items: center;
-      gap: 0.4rem;
-      cursor: pointer;
-      user-select: none;
-    }
-
-    .input-type-selector input[type="radio"] {
-      accent-color: var(--primary-green);
-      cursor: pointer;
-    }
-
-    .input-type-label {
-      font-family: 'Source Sans 3', sans-serif;
-      font-size: 0.8rem;
-      color: var(--text-secondary);
-      margin-right: 0.8rem;
-      font-weight: 500;
-    }
-
     #preview {
       background: rgba(10, 15, 20, 0.8);
       border: 1px solid var(--border-color);
@@ -440,32 +407,10 @@
     <!-- 粘贴输入区 -->
     <div class="section">
       <div class="section-title">📋 粘贴内容</div>
-      <textarea id="pasteArea" placeholder="在此粘贴您的内容（终端输出或 Markdown 文本）..."></textarea>
-      <div class="info-text">支持纯文本、HTML 和 RTF 格式。ANSI 代码将自动删除。</div>
-
-      <!-- 输入类型选择器 -->
-      <div class="input-type-selector">
-        <span class="input-type-label">内容类型：</span>
-        <label>
-          <input type="radio" name="inputType" value="auto" checked onchange="handleInputTypeChange()">
-          🤖 自动检测
-        </label>
-        <label>
-          <input type="radio" name="inputType" value="terminal" onchange="handleInputTypeChange()">
-          ⌨️ 终端输出
-        </label>
-        <label>
-          <input type="radio" name="inputType" value="markdown" onchange="handleInputTypeChange()">
-          📝 Markdown 文本
-        </label>
-        <label>
-          <input type="radio" name="inputType" value="infer" onchange="handleInputTypeChange()">
-          📊 智能推断
-        </label>
-      </div>
+      <textarea id="pasteArea" placeholder="粘贴您的内容。支持 Claude Code 输出、纯文本、Markdown..."></textarea>
+      <div class="info-text">自动识别内容格式并转换。支持 HTML 和 RTF。ANSI 代码将自动删除。</div>
 
       <div class="button-group">
-        <button onclick="convertFromClipboard()">📥 从剪贴板粘贴</button>
         <button onclick="clearPasteArea()">🗑️ 清空</button>
       </div>
       <div id="pasteFeeback" class="feedback"></div>
@@ -635,9 +580,6 @@
         return '';
       }
 
-      // 获取用户选择的输入类型
-      const inputType = document.querySelector('input[name="inputType"]:checked').value;
-
       // 步骤 1：清理 ANSI 代码
       let cleaned = stripAnsiCodes(text);
 
@@ -647,21 +589,35 @@
       // 步骤 3：去除首尾空白
       cleaned = cleaned.trim();
 
-      // 步骤 4：根据输入类型处理
+      // 步骤 4：自动判断最佳转换方式
       let markdown = '';
 
-      if (inputType === 'infer') {
-        // 智能推断模式：推断结构并生成 Markdown
-        markdown = inferMarkdownStructure(cleaned);
-      } else if (inputType === 'markdown' || (inputType === 'auto' && detectMarkdownFormat(cleaned))) {
-        // 输入已经是 Markdown，直接返回
+      // 优先级 1：如果已经是 Markdown 格式，直接保留
+      if (detectMarkdownFormat(cleaned)) {
         markdown = cleaned;
-      } else {
-        // 输入是终端输出或纯文本，用代码块包裹
+      }
+      // 优先级 2：检测是否是 Claude Code 结构（有分类标题），使用智能推断
+      else if (hasCategoryHeaders(cleaned)) {
+        markdown = inferMarkdownStructure(cleaned);
+      }
+      // 优先级 3：默认作为终端输出，用代码块包裹
+      else {
         markdown = '```text\n' + cleaned + '\n```';
       }
 
       return markdown;
+    }
+
+    // 检测文本中是否有分类标题
+    function hasCategoryHeaders(text) {
+      const lines = text.split('\n');
+      let categoryCount = 0;
+      for (let line of lines) {
+        if (isCategoryHeader(line)) {
+          categoryCount++;
+        }
+      }
+      return categoryCount >= 1;  // 至少有 1 个分类标题
     }
 
     function updatePreview(markdownText) {
@@ -760,61 +716,7 @@
       copyButton.disabled = !markdownText || markdownText.trim() === '';
     }
 
-    // 处理输入类型改变
-    function handleInputTypeChange() {
-      // 当用户改变输入类型时，重新转换当前的文本
-      const pasteAreaText = document.getElementById('pasteArea').value;
-      if (pasteAreaText) {
-        convertPaste();
-      }
-    }
-
-    // 主要事件处理函数
-    function convertFromClipboard() {
-      navigator.clipboard.read().then(items => {
-        if (items.length === 0) {
-          showFeedback('pasteFeeback', '❌ 剪贴板中无内容', 'error');
-          return;
-        }
-
-        const item = items[0];
-        let textPromise = null;
-
-        // 优先级：RTF > HTML > 纯文本
-        if (item.types.includes('text/rtf')) {
-          textPromise = item.getType('text/rtf').then(blob => blob.text());
-        } else if (item.types.includes('text/html')) {
-          textPromise = item.getType('text/html').then(blob => {
-            return blob.text().then(html => extractPlainTextFromHtml(html));
-          });
-        } else if (item.types.includes('text/plain')) {
-          textPromise = item.getType('text/plain').then(blob => blob.text());
-        }
-
-        if (!textPromise) {
-          showFeedback('pasteFeeback', '❌ 不支持的剪贴板格式', 'error');
-          return;
-        }
-
-        textPromise.then(text => {
-          document.getElementById('pasteArea').value = text;
-          convertPaste();
-          showFeedback('pasteFeeback', '✓ 粘贴成功', 'success');
-        }).catch(err => {
-          showFeedback('pasteFeeback', '❌ 读取剪贴板失败：' + err.message, 'error');
-        });
-      }).catch(err => {
-        // 降级方案：尝试标准 Clipboard API
-        navigator.clipboard.readText().then(text => {
-          document.getElementById('pasteArea').value = text;
-          convertPaste();
-          showFeedback('pasteFeeback', '✓ 粘贴成功', 'success');
-        }).catch(fallbackErr => {
-          showFeedback('pasteFeeback', '❌ 剪贴板访问被拒绝。请使用 Ctrl+V 手动粘贴', 'error');
-        });
-      });
-    }
-
+    // 主要转换函数
     function convertPaste() {
       const pasteAreaText = document.getElementById('pasteArea').value;
       const markdown = convertTerminalToMarkdown(pasteAreaText);
@@ -844,7 +746,6 @@
 
     function clearPasteArea() {
       document.getElementById('pasteArea').value = '';
-      showFeedback('pasteFeeback', '✓ 粘贴区已清空', 'success');
     }
 
     function clearMarkdown() {
